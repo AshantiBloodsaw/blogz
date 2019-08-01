@@ -27,7 +27,7 @@ class Blog(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120))
-    body= db.Column(db.Text)
+    body= db.Column(db.Text())
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     pub_date = db.Column(db.DateTime)
 
@@ -48,7 +48,7 @@ def require_login():
         return redirect('/login')
 
 #index route redirects to home page.        
-@app.route('/')
+@app.route('/', methods=['POST', 'GET'])
 def index():
     users = User.query.all()
     return render_template('index.html', users=users, header='Blogz Users')
@@ -56,24 +56,26 @@ def index():
 @app.route('/blog') # route 
 def blog(): # route handler functions
     blog_id = request.args.get('id')
-    user_id = request.args.get('userid')
+    user_id = request.args.get('owner_id')
     blogs = Blog.query.all()
 
     if user_id:
-        Posts = Blog.query.filter_by(owner_id=user_id)
+        posts = Blog.query.filter_by(owner_id=user_id).all()
         return render_template('user.html', posts=posts, header='User Posts')
     if blog_id:
-        blogs = Blog.query.get(blog_id)
+        blogs = Blog.query.all()
         return render_template('blog.html',blogs=blogs, header='All Blog Posts')
+    else:
         blog = Blog.query.get(blog_id) # GET request with a blog id query parameter
-    return render_template ('entry.html', posts=post, header='All Blog Post')
+        return render_template ('entry.html', blog=blog, header='All Blog Post')
+    return render_template('blog.html')
 
 @app.route('/newpost', methods=['POST', 'GET'])
 def newpost():
     
     if request.method == 'POST':
-        blog_title = request.form['blog-title']
-        blog_body = request.form['blog-entry']
+        blog_title = request.form['title']
+        blog_body = request.form['body']
         title_error=''
         body_error=''
         
@@ -92,6 +94,76 @@ def newpost():
         else:
             return render_template('newpost.html',title = 'Build-a-blog', title_error=title_error, body_error=body_error, blog_title=blog_title, blog_body=blog_body)
 
-    return render_template('newpost.html', title='Build-a-blog')        
+    return render_template('newpost.html', title='Build-a-blog')
+
+@pp.route('/login', methods=['POST', 'GET'])
+def login():
+    if request.method == 'POST':
+        login_username = request.form['login-username']
+        login_password = request.form['login-password']
+        user = User.query.filter_by(username=login_username).first()
+
+        if not user:
+            username_error = "Username does not exist."
+            return render_template('login.html', username_error, username='', login_active="active")
+        
+        elif not check_pw_hash(login_password, user.pw_hash):
+            password_error = "Incorrect password."
+            return render_template('login.html', password_error=password_error, username=login_username, login_active="active")
+
+        else:
+            session['username'] = login_username
+            return redirect('/newpost')
+
+    return render_template('login.html', login_active="active")
+
+@app.route('/signup', methods=['POST', 'GET'])
+def signup():
+
+    if request.method == 'GET':
+        return render_template('signup.html', title="Sign Up", signup_active="active")
+
+    if request.method == 'POST':
+        new_username = request.form['new-username']
+        new_password = request.form['new-password']
+        new_password_verify = request.form['new-password-verify']
+
+    username_error = ''
+    password_error = ''
+    verify_error = ''
+
+    if new_username == '':
+        username_error = 'Please enter a valid username.'
+    elif len(new_username) <=3:
+        username_error = 'Please enter a username with 4 or more characters.'
+    if new_password != new_password_verify or new_password_verify == '':
+        verify_error = "Please verify your password."
+        password_error = 'Please reenter your password.'
+    if new_password == '':
+        password_error = 'Please enter a valid password.'
+    elif len(new_password) <= 3:
+        password_error = 'Please enter a password with 4 or more characters.'
+
+    user_exists = User.query.filter_by(username=new_username).first()
+
+    if user_exists:
+        username_error = 'This username is already taken.'
+
+    if username_error or password_error or verify_error:
+        return render_template('/signup.html', title="Sign Up", new_username=new_username,
+    username_error=username_error, password_error=password_error, verify_error=verify_error, signup_active"active")
+
+    new_user = User(new_username, new_password)
+    db.session.add(new_user)
+    db.session.commit()
+    session['username'] = new_user.username
+
+    return redirect('/newpost')
+
+@app.route('logout')
+def logout():
+    del session['email']
+    return redirect('/blog')
+
 if __name__ == '__main__':
     app.run()        
