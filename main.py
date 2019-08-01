@@ -96,7 +96,7 @@ def newpost():
 
     return render_template('newpost.html', title='Build-a-blog')
 
-@pp.route('/login', methods=['POST', 'GET'])
+@app.route('/login', methods=['POST', 'GET'])
 def login():
     if request.method == 'POST':
         login_username = request.form['login-username']
@@ -105,11 +105,11 @@ def login():
 
         if not user:
             username_error = "Username does not exist."
-            return render_template('login.html', username_error, username='', login_active="active")
+            return render_template('login.html', username_error=username_error, username='')
         
         elif not check_pw_hash(login_password, user.pw_hash):
             password_error = "Incorrect password."
-            return render_template('login.html', password_error=password_error, username=login_username, login_active="active")
+            return render_template('login.html', password_error=password_error, username=login_username)
 
         else:
             session['username'] = login_username
@@ -150,8 +150,7 @@ def signup():
         username_error = 'This username is already taken.'
 
     if username_error or password_error or verify_error:
-        return render_template('/signup.html', title="Sign Up", new_username=new_username,
-    username_error=username_error, password_error=password_error, verify_error=verify_error, signup_active"active")
+        return render_template('/signup.html', title="Sign Up", new_username=new_username,username_error=username_error, password_error=password_error, verify_error=verify_error)
 
     new_user = User(new_username, new_password)
     db.session.add(new_user)
@@ -160,7 +159,7 @@ def signup():
 
     return redirect('/newpost')
 
-@app.route('logout')
+@app.route('/logout')
 def logout():
     del session['email']
     return redirect('/blog')
