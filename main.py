@@ -1,14 +1,14 @@
 from flask import Flask, request, redirect, render_template, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
+from hashutils import make_pw_hash, check_pw_hash
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:Ashanti@localhost:8889/blogz'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://blogz:Lisa2@localhost:3306/blogz'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
-app.secret_key = '\xa7X\xc3\xa8{0\x87)\xb2\xd7;\xedg?\xfd\xb3\xcf!jF6\x88\x13Z'
+app.secret_key = "mF7%z9LWw4$zj20a"
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
